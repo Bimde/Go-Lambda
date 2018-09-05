@@ -2,18 +2,30 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-lambda-go/events"
 	"log"
 )
 
-type MyEvent struct {
-	Name string `json:"name"`
+type myReturn struct {
+	Response string `json:"response"`
 }
 
-func handle(ctx context.Context, name MyEvent) (string, error) {
+func handle(ctx context.Context, name events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	log.Print("Called by ", name)
-	return fmt.Sprintf("Hello %s!", name.Name ), nil
+	log.Print("context ", ctx)
+	headers := map[string]string{"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept"}
+
+	code := 200
+	response, error := json.Marshal(myReturn{Response:"Hello, " + name.Body})
+	if error != nil {
+		log.Println(error)
+		response = []byte("Internal Server Error")
+		code = 500
+	}
+
+	return events.APIGatewayProxyResponse {code, headers, string(response), false}, nil
 }
 
 func main() {
